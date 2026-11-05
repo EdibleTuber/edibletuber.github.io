@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="icon" href="{{ '/assets/favicon.svg' | relative_url }}" type="image/svg+xml">
+  <link rel="stylesheet" href="{{ '/assets/tufte.css' | relative_url }}">
+  <link rel="stylesheet" href="{{ '/assets/site.css' | relative_url }}">
+  {% seo %}
+  {% feed_meta %}
+</head>
+<body>
+  <article>
+    <header class="site-header">
+      <p class="site-title"><a href="{{ '/' | relative_url }}">{{ site.title }}</a></p>
+      <nav>
+        <a href="{{ '/' | relative_url }}">Posts</a>
+        <a href="{{ '/projects/' | relative_url }}">Projects</a>
+        <a href="{{ '/about/' | relative_url }}">About</a>
+        <a href="https://github.com/EdibleTuber">GitHub</a>
+      </nav>
+    </header>
+    {{ content }}
+    <footer class="site-footer">
+      <p>&copy; {{ site.time | date: "%Y" }} {{ site.title }}. Text is CC BY 4.0. Code snippets are MIT. <a href="{{ '/feed.xml' | relative_url }}">RSS</a></p>
+    </footer>
+  </article>
+</body>
+</html>

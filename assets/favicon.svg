@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <rect width="32" height="32" rx="6" fill="#fffff8"/>
+  <!-- sprout -->
+  <path d="M15.5 9 Q16.5 4.5 20.5 3.5 Q19.5 8 15.5 9 Z" fill="#b41e1e"/>
+  <!-- tuber -->
+  <ellipse cx="16" cy="18" rx="9.5" ry="7" transform="rotate(-18 16 18)" fill="#111111"/>
+  <!-- eyes -->
+  <circle cx="12.5" cy="17" r="1" fill="#fffff8"/>
+  <circle cx="17.5" cy="19.5" r="1" fill="#fffff8"/>
+  <circle cx="19.5" cy="15.5" r="0.8" fill="#fffff8"/>
+</svg>

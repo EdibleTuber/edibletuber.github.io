@@ -1,0 +1,31 @@
+title: Shane Kell
+description: Security engineering research and local inference
+url: https://edibletuber.github.io
+baseurl: ""
+author:
+  name: Shane Kell
+
+markdown: kramdown
+permalink: /:year/:month/:title/
+timezone: America/New_York
+
+plugins:
+  - jekyll-feed
+  - jekyll-seo-tag
+  - jekyll-sitemap
+
+# jekyll-seo-tag
+logo: /assets/favicon.svg
+twitter:
+  card: summary_large_image
+
+# Default social-share image for every page (overridable per post via `image:` front matter)
+defaults:
+  - scope:
+      path: ""
+    values:
+      image: /assets/og-default.png
+
+exclude:
+  - README.md
+  - .gitignore
