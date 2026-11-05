@@ -16,8 +16,6 @@ plugins:
 
 # jekyll-seo-tag
 logo: /assets/favicon.svg
-twitter:
-  card: summary_large_image
 
 # Default social-share image for every page (overridable per post via `image:` front matter)
 defaults:
