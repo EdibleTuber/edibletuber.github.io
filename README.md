@@ -1,3 +1,3 @@
 # edibletuber.github.io
 
-Write uos on my side projects. cenenting learning and overall project nites.
+Write ups on my side projects. cementing learning and overall project notes.
