@@ -9,7 +9,7 @@ description: A few things I keep returning to — agents for reverse engineering
   <p class="subtitle">A few things I keep returning to, running on hardware I own.</p>
 
   <h2 class="project-group">Agents for reverse engineering</h2>
-  <p>Most of my recent work is a small fleet of agents that do mobile reverse engineering, driven by models running on my own network instead of an API I'm renting. Each action is scored by risk, logged, and paused for my approval when it matters.</p>
+  <p>Most of my recent work is a small fleet of agents that do mobile reverse engineering, driven by models running on my own network instead of an API. Each action is scored by risk, logged, and paused for my approval is the intent, and top of mind for research is agent sandboxing and model fine tuning.</p>
 
   <p class="project"><a href="https://github.com/EdibleTuber/PARE"><b>PARE</b></a> — Personal Agentic Reverse Engineer. A conversational operator for mobile RE: it answers from a curated research vault, runs static APK analysis, Frida instrumentation, and HTTPS interception, and routes every action through a dispatch layer that scores it by risk, pauses the risky ones for approval, and logs the call.</p>
 
