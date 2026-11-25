@@ -1,0 +1,98 @@
+---
+layout: post
+title: "An Agentic RE Stack That Runs Without Frontier Models"
+date: 2026-11-25 09:00:00 -0800
+categories: agents reverse-engineering local-inference
+description: How PARE, PAL, and a shared agent core make a local 30B-class model competent at real reverse-engineering work.
+---
+
+Most agentic reverse-engineering demos I've seen share an unspoken assumption: a frontier model is on the other end of the wire. The decompilation gets pasted in whole. The model reasons. Everyone nods.
+
+That demo breaks the moment the model is a 30B-class quant running on your own inference server. The context window is smaller, and every token in it is paid for on every later turn. Tool-call reliability drops. Long procedural instructions drift. The model loops when it's stuck instead of stopping.
+
+You can respond to that by waiting for better models. Or you can treat it as a design constraint and build around it. This post is about the second path: a personal agentic RE stack, two applications (PARE and PAL) on a shared runtime (`agent_core`), that holds up *because* of the constraints, not despite them.
+
+The claim is not "a local model matches a frontier model." It's that **architecture can substitute where raw capability falls short**, and that the substitutes are worth building even if you do have a frontier key.
+
+## The shape of the system
+
+Three layers:
+
+- **`agent_core`** — the shared runtime: daemon lifecycle, OpenAI-compatible inference clients, retrieval, tool and command registries, and the worker layer.
+- **[PARE](https://github.com/EdibleTuber/PARE)** (Personal Agentic Reverse Engineer) — a conversational mobile-RE operator that drives workers: static APK analysis, Frida instrumentation, HTTPS interception, and a UART console out on a physical bench.
+- **[PAL](https://github.com/EdibleTuber/PAL)** (Personal Agentic Librarian) — the other side of the coin: a knowledge manager that curates an Obsidian-style vault, which PARE consults by semantic search when it needs curated knowledge rather than whatever its weights happen to contain.
+
+Everything runs on hardware in my own house. A local OpenAI-compatible inference server (Ollama, llama.cpp, vLLM all work). No model API calls leave the LAN.
+
+The producer/consumer split between PAL and PARE is the part most personal-memory designs collapse into one agent with a database table. It matters: knowledge is *authored* under one set of consent rules and *consumed* under another, and neither agent has to be good at the other's job.
+
+## PARE: methodology as software
+
+A tool-using agent improvises. An RE investigator follows a method. PARE's central bet is that the method can be encoded, and that it has to be encoded precisely because the model won't invent it on its own.
+
+The loop:
+
+1. **Orient** — from the behaviour the operator describes, find the region of code or traffic that could produce it. The operator's description is a lead to corroborate, not ground truth.
+2. **Enumerate** — build the *candidate set* before committing: every site that could cause the symptom, not the first plausible idiom.
+3. **Hypothesize** — pick one candidate and pin what should be observable at runtime.
+4. **Verify** — confirm it against a live capture. An empty capture means "not triggered yet." A *contradicting* value means the target was wrong.
+5. **Re-orient** — on a dead end, advance to the next candidate; on a surprise, go back to static analysis to explain it.
+
+Prose in a system prompt won't hold a model to this by itself. Two guards enforce it mechanically:
+
+- A **repeat-guard**: a tool call that repeats with the same result is short-circuited instead of spinning to the round cap. Local models loop more; the floor catches it.
+- **Operator-handback checkpoints**: the agent ends its turn with a question when it's stuck, or when it's about to commit to one of several near-duplicate candidates. A silent wrong commit becomes a one-line correction. This is the discipline a 70B+ model would half-impose on itself, made structural.
+
+## The capture store: context you only pay for twice
+
+RE tools produce enormous output: an hour of HTTPS flows, every class in an APK, a module's exports. The naive agent pastes it all into the conversation and burns its window in a few calls.
+
+PARE stores every worker result in a capture store and lets only small results through to the model. Large results are replaced by a stub of at most 512 bytes: what was captured, how many rows, which columns, and a `ref`. The model then *asks for just what it needs* — searching everything with `search_capture` and reading one result at a time with `read_capture`.
+
+Two properties fall out of this that I didn't fully anticipate:
+
+- **Findings outlive the call that produced them.** A capture from three days ago is still searchable; the investigation accumulates instead of evaporating with the context window.
+- **Nothing is thrown away.** The operator can view any capture in full, straight from the store, with no model in the path. The human reads the ground truth; the model reads the stubs of ground truth it needs.
+
+This is the design pattern that made me confident about adding new workers: any tool whose output can be shaped into *rows with columns* plugs into PARE's loop without changing the conversation model at all.
+
+## Workers, risk tiers, and the bench
+
+Workers are registered with risk tiers. Passive and read-tier tools execute; anything that changes target or device state pauses for operator approval, and every call is audited. That single mechanism resolves the tension that makes most open-source security agents unusable: they're either fully autonomous (reckless with a live target) or fully manual (a chatbot with extra steps).
+
+The hardware tier runs on a Raspberry Pi at the workbench. The first worker there, [pare-hardware-mcp](https://github.com/EdibleTuber/pare-hardware-mcp), exposes a UART console session from a Tigard debugger to agents: device listing, baud detection, open/close, reading captured output, sending commands. Its internal contract is hardware-free — the tool surface was TDD'd against canned artifacts before it ever touched a board, which is a pattern worth more than any single tool in it.
+
+## PAL: consent tiers instead of a write-protect switch
+
+PAL manages the vault, and the interesting decisions are all about *when the agent may act*:
+
+- **Vault reads** flow freely.
+- **Vault writes** are autonomous, but every write is git-committed automatically — an agent that can act freely, and a history you can always review or revert.
+- **Web fetches and wiki promotions** are consent-gated: PAL proposes and waits.
+
+That gradient — read everything, write recoverably, commit irreversibly only with a human — is a more correct shape than both common alternatives: gate everything (useless) or gate nothing (a prompt injection away from disaster).
+
+PAL's security posture is treated as a feature and documented as one: prompt-injection sanitization on fetched content, vault-scoped path checks on every file operation, a domain allowlist on fetches, Unix socket ACLs, and Discord allowlisting with per-channel context isolation.
+
+## Why run local at all
+
+Honest accounting:
+
+**What you lose.** Raw capability. Protocol inference from hexdumps, long-series reasoning, and tool-call reliability all land lower on a 30B-class quant than on a frontier API. Expect to verify hypotheses a frontier agent would nail unassisted.
+
+**What you get.** A boundary. For an agent whose job is examining hostile software and untrusted network traffic, the fact that no model API ever sees the target data is not a compromise, it's a threat-model requirement. Add: inference you can audit end to end, no per-token metering during long investigations, and no vendor deciding to deprecate your model mid-investigation.
+
+**What makes it work at all** is the architecture: stubs instead of pasted dumps, guards instead of good judgment, consent tiers instead of unlimited autonomy. Each of those substitutes is *also* what a well-run frontier deployment looks like. Building them against a small model just made it non-optional.
+
+## What's next: signals
+
+The next worker points the loop at the RF spectrum. A Linux handheld with sub-GHz and LoRa isn't just a toy, it's a programmable radio data source. The same bench topology applies — a worker exposing set-frequency / capture / read / transmit tools, transmit behind the risk gate, every capture landing in the capture store as rows the model can search and read by window.
+
+The five-beat loop transfers almost unchanged. Only the Verify instrument differs: instead of a Frida hook, the runtime check is a replay.
+
+[VERIFY: add repo links for agent_core here if you want them inline: https://github.com/EdibleTuber/agent_core]
+
+---
+
+*PARE, PAL, and agent_core are personal projects, built and used by one person. Everything described here runs on real hardware in my own lab.*
+```
