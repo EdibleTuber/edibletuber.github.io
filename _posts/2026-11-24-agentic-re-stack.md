@@ -1,7 +1,7 @@
 ---
 layout: post
 title: "An Agentic RE Stack That Runs Without Frontier Models"
-date: 2026-11-25 09:00:00 -0800
+date: 2026-11-24 09:00:00 -0800
 categories: agents reverse-engineering local-inference
 description: How PARE, PAL, and a shared agent core make a local 30B-class model competent at real reverse-engineering work.
 ---
@@ -90,9 +90,6 @@ The next worker points the loop at the RF spectrum. A Linux handheld with sub-GH
 
 The five-beat loop transfers almost unchanged. Only the Verify instrument differs: instead of a Frida hook, the runtime check is a replay.
 
-[VERIFY: add repo links for agent_core here if you want them inline: https://github.com/EdibleTuber/agent_core]
-
 ---
 
 *PARE, PAL, and agent_core are personal projects, built and used by one person. Everything described here runs on real hardware in my own lab.*
-```
